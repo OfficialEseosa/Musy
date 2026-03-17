@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../services/database_helper.dart';
 import '../services/settings_service.dart';
+import 'results_screen.dart';
 
 class QuizScreen extends StatefulWidget {
   final String gameMode;
@@ -22,6 +23,12 @@ class _QuizScreenState extends State<QuizScreen> {
   int _timerDuration = 30;
   int _timeLeft = 30;
   Timer? _timer;
+
+  // Scoring
+  int _score = 0;
+  int _correctCount = 0;
+  int _currentStreak = 0;
+  int _highestStreak = 0;
 
   // Answer state
   String? _selectedAnswer;
@@ -75,6 +82,7 @@ class _QuizScreenState extends State<QuizScreen> {
       setState(() {
         _isAnswered = true;
         _selectedAnswer = null;
+        _currentStreak = 0;
       });
 
       // Record as incorrect attempt
@@ -99,6 +107,23 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() {
       _selectedAnswer = answer;
       _isAnswered = true;
+
+      if (isCorrect) {
+        _correctCount++;
+        _currentStreak++;
+
+        // Base points + streak bonus
+        _score += 10;
+        if (_currentStreak > 0 && _currentStreak % 3 == 0) {
+          _score += 5; // bonus every 3 consecutive correct
+        }
+
+        if (_currentStreak > _highestStreak) {
+          _highestStreak = _currentStreak;
+        }
+      } else {
+        _currentStreak = 0;
+      }
     });
 
     // Record attempt
@@ -120,10 +145,25 @@ class _QuizScreenState extends State<QuizScreen> {
       });
       _startTimer();
     } else {
-      // Quiz finished — for now just pop back
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      _finishQuiz();
+    }
+  }
+
+  void _finishQuiz() {
+    _timer?.cancel();
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResultsScreen(
+            score: _score,
+            correctAnswers: _correctCount,
+            totalQuestions: _questions.length,
+            highestStreak: _highestStreak,
+            gameMode: widget.gameMode,
+          ),
+        ),
+      );
     }
   }
 
@@ -154,6 +194,11 @@ class _QuizScreenState extends State<QuizScreen> {
               const Text(
                 'No questions available for this mode.',
                 style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Add some in the Question Manager!',
+                style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -202,23 +247,67 @@ class _QuizScreenState extends State<QuizScreen> {
               minHeight: 8,
             ),
             const SizedBox(height: 8),
-            Text(
-              '$_timeLeft s',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: _timeLeft <= 5 ? Colors.red : Colors.grey[600],
-                fontWeight: FontWeight.bold,
-              ),
+
+            // Score and streak row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Score: $_score',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  children: [
+                    if (_currentStreak >= 2)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '🔥 $_currentStreak streak',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '$_timeLeft s',
+                      style: TextStyle(
+                        color: _timeLeft <= 5 ? Colors.red : Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 
             // Question text
-            Text(
-              question.questionText,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Center(
+                child: Text(
+                  question.questionText,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
             // Answer options
             ...options.map((option) {
@@ -250,6 +339,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
               );
             }),
+            const SizedBox(height: 12),
           ],
         ),
       ),
