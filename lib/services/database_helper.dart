@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/question.dart';
+import '../models/game_session.dart';
+import '../models/leaderboard_entry.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -160,6 +162,12 @@ class DatabaseHelper {
     return await db.insert('sessions', session);
   }
 
+  Future<int> insertSessionModel(GameSession session) async {
+    final map = session.toMap();
+    map.remove('id');
+    return await insertSession(map);
+  }
+
   Future<List<Map<String, dynamic>>> getAllSessions() async {
     final db = await database;
     return await db.query('sessions', orderBy: 'datePlayed DESC');
@@ -172,6 +180,12 @@ class DatabaseHelper {
     return await db.insert('leaderboard', entry);
   }
 
+  Future<int> insertLeaderboardEntryModel(LeaderboardEntry entry) async {
+    final map = entry.toMap();
+    map.remove('id');
+    return await insertLeaderboardEntry(map);
+  }
+
   Future<List<Map<String, dynamic>>> getLeaderboard({String? gameMode}) async {
     final db = await database;
     if (gameMode != null && gameMode != 'All Modes') {
@@ -179,10 +193,62 @@ class DatabaseHelper {
         'leaderboard',
         where: 'gameMode = ?',
         whereArgs: [gameMode],
-        orderBy: 'score DESC',
+        orderBy: 'score DESC, datePlayed DESC',
       );
     }
-    return await db.query('leaderboard', orderBy: 'score DESC');
+    return await db.query('leaderboard', orderBy: 'score DESC, datePlayed DESC');
+  }
+
+  // --- Stats Queries ---
+
+  Future<int?> getBestScoreByMode(String mode) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT MAX(score) as bestScore FROM sessions WHERE gameMode = ?',
+      [mode],
+    );
+    if (result.isNotEmpty && result.first['bestScore'] != null) {
+      return result.first['bestScore'] as int;
+    }
+    return null;
+  }
+
+  Future<int> getTotalGamesPlayed() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM sessions');
+    return result.first['count'] as int;
+  }
+
+  Future<int> getOverallBestScore() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT MAX(score) as best FROM sessions');
+    if (result.isNotEmpty && result.first['best'] != null) {
+      return result.first['best'] as int;
+    }
+    return 0;
+  }
+
+  Future<int> getTotalCorrectAnswers() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT SUM(correctAnswers) as total FROM sessions',
+    );
+    if (result.isNotEmpty && result.first['total'] != null) {
+      return result.first['total'] as int;
+    }
+    return 0;
+  }
+
+  // --- Seed Data ---
+
+  Future<void> seedDefaultQuestions() async {
+    final db = await database;
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM questions'),
+    );
+    if (count != null && count > 0) return; // already seeded
+
+    // TODO: add default trivia questions
   }
 
   Future<void> close() async {
