@@ -39,13 +39,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
     final db = DatabaseHelper.instance;
     final settings = SettingsService();
 
-    // Check for high score
     final previousBest = await db.getBestScoreByMode(widget.gameMode);
     if (previousBest == null || widget.score > previousBest) {
       _isNewHighScore = true;
     }
 
-    // Save session
     final session = GameSession(
       gameMode: widget.gameMode,
       score: widget.score,
@@ -56,7 +54,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
     await db.insertSessionModel(session);
 
-    // Save leaderboard entry
     final username = await settings.getUsername();
     final entry = LeaderboardEntry(
       playerName: username,
@@ -75,9 +72,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final percentage = widget.totalQuestions > 0
         ? ((widget.correctAnswers / widget.totalQuestions) * 100).round()
         : 0;
+    final incorrectAnswers = widget.totalQuestions - widget.correctAnswers;
 
     return Scaffold(
       appBar: AppBar(
@@ -98,84 +97,135 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber[100],
+                        color: Colors.amber.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.amber, width: 2),
+                        border: Border.all(
+                            color: Colors.amber.withOpacity(0.5), width: 2),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('🏆', style: TextStyle(fontSize: 24)),
-                          SizedBox(width: 8),
+                          const Text('🏆', style: TextStyle(fontSize: 24)),
+                          const SizedBox(width: 8),
                           Text(
                             'New High Score!',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.amber,
+                              color: Colors.amber[800],
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'No new record',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
 
-                  // Score display
-                  Text(
-                    '${widget.score}',
-                    style: const TextStyle(
-                      fontSize: 64,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
+                  // Final Score
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.3)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 24, horizontal: 32),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Final Score',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${widget.score}',
+                            style: TextStyle(
+                              fontSize: 56,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          Text(
+                            'pts',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const Text(
-                    'points',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
 
-                  // Stats cards
+                  // Highest Streak + Correct Answers row
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
-                          label: 'Correct',
-                          value: '${widget.correctAnswers}/${widget.totalQuestions}',
-                          icon: Icons.check_circle,
-                          color: Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatCard(
-                          label: 'Accuracy',
-                          value: '$percentage%',
-                          icon: Icons.percent,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          label: 'Best Streak',
-                          value: '${widget.highestStreak}',
+                        child: _ResultStat(
+                          label: 'Highest Streak',
+                          value: 'x${widget.highestStreak}',
                           icon: Icons.local_fire_department,
                           color: Colors.orange,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _StatCard(
-                          label: 'Mode',
-                          value: widget.gameMode.split(' ').first,
-                          icon: Icons.category,
-                          color: Colors.purple,
+                        child: _ResultStat(
+                          label: 'Correct Answers',
+                          value:
+                              '${widget.correctAnswers} / ${widget.totalQuestions}',
+                          icon: Icons.check_circle,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Incorrect answers + accuracy row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ResultStat(
+                          label: 'Incorrect Answers',
+                          value:
+                              '$incorrectAnswers / ${widget.totalQuestions}',
+                          icon: Icons.cancel,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ResultStat(
+                          label: 'Accuracy',
+                          value: '$percentage%',
+                          icon: Icons.percent,
+                          color: Colors.blue,
                         ),
                       ),
                     ],
@@ -194,14 +244,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.replay),
+                      icon: const Icon(Icons.replay_rounded),
                       label: const Text('Play Again'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                     ),
@@ -211,17 +261,27 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
                       },
-                      icon: const Icon(Icons.home),
-                      label: const Text('Go Home'),
+                      icon: const Icon(Icons.home_outlined),
+                      label: const Text('Return Home'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                     ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Footer
+                  Text(
+                    'Session saved locally · SQLite stores session history',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -230,13 +290,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _ResultStat extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final Color color;
 
-  const _StatCard({
+  const _ResultStat({
     required this.label,
     required this.value,
     required this.icon,
@@ -246,25 +306,29 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 6),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

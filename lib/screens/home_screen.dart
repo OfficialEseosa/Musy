@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _totalGames = 0;
   int _bestScore = 0;
   int _totalCorrect = 0;
+  int _topStreak = 0;
   bool _isLoading = true;
 
   @override
@@ -33,10 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     int bestScore = 0;
     int totalCorrect = 0;
+    int topStreak = 0;
     for (final s in sessions) {
       final score = s['score'] as int;
       final correct = s['correctAnswers'] as int;
+      final streak = s['highestStreak'] as int;
       if (score > bestScore) bestScore = score;
+      if (streak > topStreak) topStreak = streak;
       totalCorrect += correct;
     }
 
@@ -45,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _totalGames = sessions.length;
       _bestScore = bestScore;
       _totalCorrect = totalCorrect;
+      _topStreak = topStreak;
       _isLoading = false;
     });
   }
@@ -56,17 +61,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Musy'),
-        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
             onPressed: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
-              _loadData(); // refresh username after returning
+              _loadData();
             },
           ),
         ],
@@ -76,88 +80,193 @@ class _HomeScreenState extends State<HomeScreen> {
           : RefreshIndicator(
               onRefresh: _loadData,
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 24.0),
                 children: [
-                  // Branding
-                  Column(
-                    children: [
-                      Icon(Icons.music_note, size: 72, color: colorScheme.primary),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Musy',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
+                  // Branding section
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colorScheme.primary,
+                                colorScheme.primary.withOpacity(0.7),
+                              ],
                             ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Welcome back, $_username!',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.grey,
-                            ),
-                      ),
-                    ],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.music_note,
+                              size: 48, color: Colors.white),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Welcome to Musy',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Hey $_username! Ready to play?',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 8),
 
-                  // Stats cards
+                  // Current stats row (streak + total points)
                   Row(
                     children: [
-                      _StatCard(
-                        label: 'Total Games',
-                        value: '$_totalGames',
-                        icon: Icons.sports_esports,
-                        color: Colors.deepPurple,
+                      Expanded(
+                        child: _HighlightCard(
+                          label: 'Current Streak',
+                          value: '🔥 $_topStreak',
+                          color: Colors.orange,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      _StatCard(
-                        label: 'Best Score',
-                        value: '$_bestScore',
-                        icon: Icons.emoji_events,
-                        color: Colors.amber.shade700,
-                      ),
-                      const SizedBox(width: 12),
-                      _StatCard(
-                        label: 'Correct',
-                        value: '$_totalCorrect',
-                        icon: Icons.check_circle,
-                        color: Colors.green,
+                      Expanded(
+                        child: _HighlightCard(
+                          label: 'Total Points',
+                          value: '$_bestScore pts',
+                          color: colorScheme.primary,
+                        ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
 
                   // Play button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.play_arrow, size: 28),
+                      icon:
+                          const Icon(Icons.play_arrow_rounded, size: 28),
                       label: const Text(
                         'Play',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        elevation: 2,
                       ),
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const GameModeScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const GameModeScreen()),
                         ).then((_) => _loadData());
                       },
                     ),
                   ),
+
+                  const SizedBox(height: 32),
+
+                  // Quick Stats section
+                  Text(
+                    'Quick Stats',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _StatCard(
+                        label: 'Games\nPlayed',
+                        value: '$_totalGames',
+                        icon: Icons.sports_esports,
+                        color: Colors.deepPurple,
+                      ),
+                      const SizedBox(width: 10),
+                      _StatCard(
+                        label: 'Best\nScore',
+                        value: '$_bestScore',
+                        icon: Icons.emoji_events,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 10),
+                      _StatCard(
+                        label: 'Top\nStreak',
+                        value: '$_topStreak',
+                        icon: Icons.local_fire_department,
+                        color: Colors.orange,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Footer
+                  Text(
+                    'Offline-first · No cloud storage used',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _HighlightCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _HighlightCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: color.withOpacity(0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -179,18 +288,22 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+        ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+          padding:
+              const EdgeInsets.symmetric(vertical: 14.0, horizontal: 8.0),
           child: Column(
             children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 6),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
