@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'services/theme_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/question_manager_screen.dart';
@@ -12,13 +14,28 @@ class MusyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Musy',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (_) => ThemeController()..loadThemePreference(),
+      child: Consumer<ThemeController>(
+        builder: (context, themeController, _) {
+          return MaterialApp(
+            title: 'Musy',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.deepPurple,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            themeMode: themeController.themeMode,
+            home: const MainNavigation(),
+          );
+        },
       ),
-      home: const MainNavigation(),
     );
   }
 }
