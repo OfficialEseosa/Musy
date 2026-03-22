@@ -1,63 +1,170 @@
-# Musy
+# Musy 🎵
 
-A music trivia and challenge app built with Flutter — fully offline.
+**A fully offline music trivia app built with Flutter.**
 
-## About
+Musy challenges you with three game modes, timed questions, streak tracking, and a local leaderboard — all without needing an internet connection.
 
-Musy is a fun, offline-first music trivia game where players can test their knowledge across three game modes: **Finish the Lyric**, **Guess the Artist**, and **Name the Song**. Track your streaks, compete on the local leaderboard, and manage your own question bank — all without an internet connection.
+---
 
-## Tech Stack
+## Team
 
-- **Flutter** & **Dart**
-- **SQLite** (via `sqflite`) — stores questions, sessions, and leaderboard data
-- **SharedPreferences** — stores user settings (username, theme, timer)
-- **Provider** — state management
+| Name | Role |
+|------|------|
+| **Raphael Omorose** | Backend development, SQLite schema, game logic, CRUD |
+| **Aaliyah Fievre** | UI/UX design, Flutter frontend, navigation, visual polish |
+
+**Course:** CSC 4360 – Mobile App Development · Section 10111 · Team Rapliyah
+
+---
 
 ## Features
 
-- Three game modes with timed questions
-- Score tracking, streaks, and session summaries
-- Local leaderboard with mode filtering
-- Question Manager with full CRUD support
-- Light and dark theme support
-- Fully offline — no cloud services
+- **Three game modes:** Finish the Lyric, Guess the Artist, Name the Song
+- **Timed questions** with adjustable timer (15–60 seconds)
+- **Scoring system:** +10 per correct answer, +5 streak bonus every 3 in a row
+- **Recommendation engine:** prioritizes frequently-missed questions (30% weak question mixing)
+- **Local leaderboard** with mode filtering and tie handling
+- **Question Manager** with full CRUD (add, edit, delete questions)
+- **Settings:** username, dark/light theme toggle, timer duration
+- **30 built-in trivia questions** seeded on first launch
+- **Dark mode** support via Provider + ThemeController
+- **Fully offline** — SQLite + SharedPreferences, no cloud services
+
+---
+
+## Screens
+
+| # | Screen | Purpose |
+|---|--------|---------|
+| 1 | Home | Branding, player stats, Play button, settings access |
+| 2 | Game Mode Select | Choose between 3 challenge types, view best scores |
+| 3 | Active Quiz | Timed gameplay with score/streak/timer cards |
+| 4 | Results | Final score, accuracy, streak, high-score detection |
+| 5 | Leaderboard | Ranked scores with mode filter chips |
+| 6 | Question Manager | Add/edit/delete trivia questions |
+| 7 | Settings | Username, dark mode, timer duration |
+
+---
+
+## Tech Stack
+
+- **Flutter** (Dart)
+- **sqflite** — SQLite database for questions, sessions, leaderboard, attempts
+- **shared_preferences** — user settings (username, theme, timer)
+- **provider** — state management for theme switching
+- **Material 3** — Material Design with `useMaterial3: true`
+
+---
+
+## Database Schema
+
+```
+questions
+├── id (INTEGER PK)
+├── questionText (TEXT)
+├── questionType (TEXT) — "Finish the Lyric" / "Guess the Artist" / "Name the Song"
+├── difficulty (TEXT) — Easy / Medium / Hard
+├── correctAnswer (TEXT)
+├── optionA–D (TEXT)
+
+sessions
+├── id (INTEGER PK)
+├── gameMode (TEXT)
+├── score (INTEGER)
+├── totalQuestions / correctAnswers / highestStreak (INTEGER)
+├── datePlayed (TEXT)
+
+leaderboard
+├── id (INTEGER PK)
+├── playerName (TEXT)
+├── gameMode (TEXT)
+├── score (INTEGER)
+├── datePlayed (TEXT)
+
+question_attempts
+├── id (INTEGER PK)
+├── questionId (INTEGER FK → questions.id)
+├── wasCorrect (INTEGER) — 0 or 1
+├── datePlayed (TEXT)
+```
+
+---
+
+## Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/OfficialEseosa/Musy.git
+cd Musy
+
+# Install dependencies
+flutter pub get
+
+# Run in debug mode
+flutter run
+
+# Build release APK
+flutter build apk --release
+```
+
+The APK will be at `build/app/outputs/flutter-apk/app-release.apk`.
+
+---
 
 ## Project Structure
 
 ```
 lib/
-├── main.dart                  # App entry point and navigation shell
+├── main.dart                  # App entry, theme, navigation
 ├── models/
 │   ├── question.dart          # Question data model
-│   ├── game_session.dart      # Game session data model
-│   └── leaderboard_entry.dart # Leaderboard entry data model
+│   ├── game_session.dart      # Session data model
+│   └── leaderboard_entry.dart # Leaderboard data model
 ├── screens/
-│   ├── home_screen.dart       # Home / splash screen
-│   ├── game_mode_screen.dart  # Game mode selection
-│   ├── quiz_screen.dart       # Active quiz gameplay
-│   ├── results_screen.dart    # End-of-session results
-│   ├── leaderboard_screen.dart    # Local leaderboard
-│   ├── question_manager_screen.dart # Question CRUD manager
-│   └── settings_screen.dart   # User preferences
-├── services/
-│   ├── database_helper.dart   # SQLite database operations
-│   └── settings_service.dart  # SharedPreferences wrapper
-└── widgets/                   # Reusable UI components
+│   ├── home_screen.dart       # Home with stats + Play
+│   ├── game_mode_screen.dart  # Mode selection cards
+│   ├── quiz_screen.dart       # Timed quiz gameplay
+│   ├── results_screen.dart    # Post-quiz results
+│   ├── leaderboard_screen.dart# Ranked scores
+│   ├── question_manager_screen.dart # CRUD for questions
+│   └── settings_screen.dart   # App preferences
+└── services/
+    ├── database_helper.dart   # SQLite singleton + all queries
+    ├── settings_service.dart  # SharedPreferences wrapper
+    └── theme_controller.dart  # Dark/light mode ChangeNotifier
 ```
 
-## Screens
+---
 
-| # | Screen | Description |
-|---|--------|-------------|
-| 1 | Home | Entry point with player stats and Play button |
-| 2 | Game Mode Select | Choose between the three challenge types |
-| 3 | Active Quiz | Timed questions with score and streak tracking |
-| 4 | Results | Session summary with high score detection |
-| 5 | Leaderboard | Top scores filtered by game mode |
-| 6 | Question Manager | Add, edit, and delete trivia questions |
-| 7 | Settings | Username, theme, and timer preferences |
+## Usage Guide
 
-## Team
+1. **Launch the app** — 30 trivia questions are seeded automatically on first run
+2. **Tap Play** → choose a game mode → answer 10 timed questions
+3. **Earn points** — +10 per correct answer, +5 bonus every 3 correct in a row
+4. **View results** — see your score, accuracy, streak, and whether you set a high score
+5. **Check the Leaderboard** — filter by mode, see rankings
+6. **Manage Questions** — add your own trivia via the Question Manager tab
+7. **Customize** — change username, toggle dark mode, adjust timer in Settings
 
-- **Raphael Omorose** — Backend, SQLite, game logic
-- **Aaliyah Fievre** — UI/UX, frontend, visual polish
+---
+
+## Known Issues
+
+- Landscape mode uses the same portrait layout (content scrolls naturally but isn't optimized for wide screens)
+- Timer continues running briefly if the app is backgrounded mid-quiz
+
+---
+
+## Future Enhancements
+
+- Sound effects and haptic feedback on correct/incorrect answers
+- Difficulty-based scoring multipliers
+- Import/export questions as JSON
+- Animated transitions between quiz questions
+- Cloud sync for cross-device leaderboards
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
