@@ -4,6 +4,7 @@ import '../models/question.dart';
 import '../models/game_session.dart';
 import '../models/leaderboard_entry.dart';
 
+/// Singleton database helper — one shared instance handles all SQLite calls.
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
@@ -20,6 +21,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
+    // version 2 added question_attempts table for tracking performance
     return await openDatabase(
       path,
       version: 2,
@@ -122,8 +124,10 @@ class DatabaseHelper {
     return maps.map((map) => Question.fromMap(map)).toList();
   }
 
+  /// Selects quiz questions with a recommendation bias:
+  /// 30% of the selection comes from frequently-missed questions,
+  /// the rest are random. This helps players practice weak areas.
   Future<List<Question>> getRandomQuestions(String mode, int count) async {
-    // Mix in weak questions (30%) for recommendation-based learning
     final weakCount = (count * 0.3).ceil();
     final randomCount = count - weakCount;
 
@@ -139,7 +143,7 @@ class DatabaseHelper {
     );
     final allQuestions = allMaps.map((m) => Question.fromMap(m)).toList();
 
-    // Filter out questions already selected as weak
+    // Avoid duplicates between weak and random pools
     final remaining = allQuestions.where((q) => !weakIds.contains(q.id)).toList();
     remaining.shuffle();
 
@@ -148,7 +152,7 @@ class DatabaseHelper {
       if (selected.length >= count) break;
       selected.add(q);
     }
-    selected.shuffle(); // mix so weak questions aren't always first
+    selected.shuffle(); // mix so weak questions aren't grouped together
     return selected;
   }
 

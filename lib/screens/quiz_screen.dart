@@ -110,6 +110,7 @@ class _QuizScreenState extends State<QuizScreen> {
       if (isCorrect) {
         _correctCount++;
         _currentStreak++;
+        // Scoring: +10 base, +5 bonus every 3 consecutive correct
         _score += 10;
         if (_currentStreak > 0 && _currentStreak % 3 == 0) {
           _score += 5;
@@ -118,7 +119,7 @@ class _QuizScreenState extends State<QuizScreen> {
           _highestStreak = _currentStreak;
         }
       } else {
-        _currentStreak = 0;
+        _currentStreak = 0; // wrong answer resets streak
       }
     });
 
