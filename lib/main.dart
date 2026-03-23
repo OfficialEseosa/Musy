@@ -23,9 +23,14 @@ class MusyApp extends StatelessWidget {
         builder: (context, themeController, _) {
           return MaterialApp(
             title: 'Musy',
+            debugShowCheckedModeBanner: false,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+              ),
             ),
             darkTheme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
@@ -33,6 +38,10 @@ class MusyApp extends StatelessWidget {
                 brightness: Brightness.dark,
               ),
               useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+              ),
             ),
             themeMode: themeController.themeMode,
             home: const MainNavigation(),
@@ -69,20 +78,23 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onItemTapped,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard),
+          NavigationDestination(
+            icon: Icon(Icons.leaderboard_outlined),
+            selectedIcon: Icon(Icons.leaderboard),
             label: 'Leaderboard',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.quiz),
+          NavigationDestination(
+            icon: Icon(Icons.quiz_outlined),
+            selectedIcon: Icon(Icons.quiz),
             label: 'Q. Manager',
           ),
         ],
@@ -90,3 +102,4 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 }
+
