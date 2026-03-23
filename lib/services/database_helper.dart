@@ -123,15 +123,33 @@ class DatabaseHelper {
   }
 
   Future<List<Question>> getRandomQuestions(String mode, int count) async {
+    // Mix in weak questions (30%) for recommendation-based learning
+    final weakCount = (count * 0.3).ceil();
+    final randomCount = count - weakCount;
+
+    final weakQuestions = await getWeakQuestions(mode, weakCount);
+    final weakIds = weakQuestions.map((q) => q.id).toSet();
+
     final db = await database;
-    final maps = await db.query(
+    final allMaps = await db.query(
       'questions',
       where: 'questionType = ?',
       whereArgs: [mode],
       orderBy: 'RANDOM()',
-      limit: count,
     );
-    return maps.map((map) => Question.fromMap(map)).toList();
+    final allQuestions = allMaps.map((m) => Question.fromMap(m)).toList();
+
+    // Filter out questions already selected as weak
+    final remaining = allQuestions.where((q) => !weakIds.contains(q.id)).toList();
+    remaining.shuffle();
+
+    final selected = <Question>[...weakQuestions];
+    for (final q in remaining) {
+      if (selected.length >= count) break;
+      selected.add(q);
+    }
+    selected.shuffle(); // mix so weak questions aren't always first
+    return selected;
   }
 
   Future<int> updateQuestion(int id, Map<String, dynamic> question) async {
@@ -153,6 +171,22 @@ class DatabaseHelper {
       'wasCorrect': wasCorrect ? 1 : 0,
       'datePlayed': DateTime.now().toIso8601String(),
     });
+  }
+
+  /// Returns questions the player has gotten wrong most often for this mode.
+  /// Used for recommendation-based question selection.
+  Future<List<Question>> getWeakQuestions(String mode, int count) async {
+    final db = await database;
+    final maps = await db.rawQuery('''
+      SELECT q.*, COUNT(qa.id) as wrongCount
+      FROM questions q
+      INNER JOIN question_attempts qa ON qa.questionId = q.id
+      WHERE q.questionType = ? AND qa.wasCorrect = 0
+      GROUP BY q.id
+      ORDER BY wrongCount DESC
+      LIMIT ?
+    ''', [mode, count]);
+    return maps.map((m) => Question.fromMap(m)).toList();
   }
 
   // --- Session CRUD ---
