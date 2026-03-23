@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _bestScore = 0;
   int _totalCorrect = 0;
   int _topStreak = 0;
+  Map<String, String> _insight = {};
   bool _isLoading = true;
 
   @override
@@ -44,12 +45,16 @@ class _HomeScreenState extends State<HomeScreen> {
       totalCorrect += correct;
     }
 
+    // Get AI coaching tip based on game history
+    final insight = await _db.getPerformanceInsight();
+
     setState(() {
       _username = username;
       _totalGames = sessions.length;
       _bestScore = bestScore;
       _totalCorrect = totalCorrect;
       _topStreak = topStreak;
+      _insight = insight;
       _isLoading = false;
     });
   }
@@ -122,7 +127,73 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+
+                  // Smart Coach — AI-powered tip from game history
+                  if (_insight.isNotEmpty)
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(
+                          color: colorScheme.primary.withOpacity(0.25),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _insight['icon'] ?? '🎵',
+                              style: const TextStyle(fontSize: 28),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.auto_awesome,
+                                          size: 14,
+                                          color: colorScheme.primary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Smart Coach',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _insight['title'] ?? '',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _insight['message'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
 
                   // Current stats row (streak + total points)
                   Row(

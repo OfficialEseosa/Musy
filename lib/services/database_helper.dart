@@ -277,6 +277,104 @@ class DatabaseHelper {
     return 0;
   }
 
+  /// Rule-based AI coach: analyzes session history to generate a personalized tip.
+  /// Returns a Map with 'icon', 'title', and 'message' for display.
+  Future<Map<String, String>> getPerformanceInsight() async {
+    final db = await database;
+    final sessions = await getAllSessions();
+
+    // No data yet — encourage the user to play
+    if (sessions.isEmpty) {
+      return {
+        'icon': '🎯',
+        'title': 'Ready to start?',
+        'message': 'Play your first round and I\'ll start tracking your progress!',
+      };
+    }
+
+    // Analyze per-mode accuracy
+    final modeStats = <String, Map<String, int>>{};
+    for (final s in sessions) {
+      final mode = s['gameMode'] as String;
+      final correct = s['correctAnswers'] as int;
+      final total = s['totalQuestions'] as int;
+      modeStats[mode] ??= {'correct': 0, 'total': 0, 'games': 0};
+      modeStats[mode]!['correct'] = modeStats[mode]!['correct']! + correct;
+      modeStats[mode]!['total'] = modeStats[mode]!['total']! + total;
+      modeStats[mode]!['games'] = modeStats[mode]!['games']! + 1;
+    }
+
+    // Find weakest and strongest modes
+    String? weakestMode;
+    String? strongestMode;
+    double worstAccuracy = 1.0;
+    double bestAccuracy = 0.0;
+
+    for (final entry in modeStats.entries) {
+      final total = entry.value['total']!;
+      if (total == 0) continue;
+      final accuracy = entry.value['correct']! / total;
+      if (accuracy < worstAccuracy) {
+        worstAccuracy = accuracy;
+        weakestMode = entry.key;
+      }
+      if (accuracy > bestAccuracy) {
+        bestAccuracy = accuracy;
+        strongestMode = entry.key;
+      }
+    }
+
+    // Check recent trend (last 3 vs previous 3 sessions)
+    if (sessions.length >= 6) {
+      final recent3 = sessions.sublist(0, 3);
+      final prev3 = sessions.sublist(3, 6);
+      final recentAvg = recent3.fold<int>(0, (sum, s) => sum + (s['score'] as int)) / 3;
+      final prevAvg = prev3.fold<int>(0, (sum, s) => sum + (s['score'] as int)) / 3;
+
+      if (recentAvg > prevAvg * 1.2) {
+        return {
+          'icon': '📈',
+          'title': 'You\'re improving!',
+          'message': 'Your recent scores are ${((recentAvg / prevAvg - 1) * 100).round()}% higher than before. Keep it up!',
+        };
+      } else if (recentAvg < prevAvg * 0.8) {
+        return {
+          'icon': '💪',
+          'title': 'Shake it off!',
+          'message': 'Recent scores dipped a bit. Try ${weakestMode ?? "a different mode"} to mix things up.',
+        };
+      }
+    }
+
+    // Suggest weakest mode if accuracy is low
+    if (weakestMode != null && worstAccuracy < 0.5) {
+      final pct = (worstAccuracy * 100).round();
+      return {
+        'icon': '🧠',
+        'title': 'Focus area: $weakestMode',
+        'message': 'You\'re at $pct% accuracy here. The quiz will mix in questions you\'ve missed to help you improve.',
+      };
+    }
+
+    // Celebrate strong performance
+    if (strongestMode != null && bestAccuracy > 0.8) {
+      final pct = (bestAccuracy * 100).round();
+      return {
+        'icon': '⭐',
+        'title': 'You\'re crushing $strongestMode!',
+        'message': '$pct% accuracy — try a harder mode or challenge your high score!',
+      };
+    }
+
+    // Default: encourage more play
+    final totalGames = sessions.length;
+    return {
+      'icon': '🎵',
+      'title': 'Keep going!',
+      'message': 'You\'ve played $totalGames game${totalGames == 1 ? '' : 's'}. Play more to unlock detailed insights.',
+    };
+  }
+
   // --- Seed Data ---
 
   Future<void> seedDefaultQuestions() async {
