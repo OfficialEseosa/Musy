@@ -439,21 +439,20 @@ class _QuestionFormState extends State<_QuestionForm> {
               // Correct answer selector
               _label('Correct Answer'),
               const SizedBox(height: 6),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
                 children: _answerOptions.map((opt) {
                   final selected = _correctAnswer == opt;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: ChoiceChip(
-                      label: Text('Option $opt'),
-                      selected: selected,
-                      onSelected: (_) =>
-                          setState(() => _correctAnswer = opt),
-                      selectedColor: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.2),
-                    ),
+                  return ChoiceChip(
+                    label: Text('Option $opt'),
+                    selected: selected,
+                    onSelected: (_) =>
+                        setState(() => _correctAnswer = opt),
+                    selectedColor: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withOpacity(0.2),
                   );
                 }).toList(),
               ),
