@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../services/settings_service.dart';
+import '../services/theme_controller.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -43,10 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveUsername(String username) async {
     await _settingsService.setUsername(username);
-  }
-
-  Future<void> _saveDarkMode(bool isDark) async {
-    await _settingsService.setDarkMode(isDark);
   }
 
   Future<void> _saveTimerDuration(int seconds) async {
@@ -113,11 +112,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Dark Mode'),
             subtitle: const Text('Enable dark theme for the app'),
             value: _isDarkMode,
-            onChanged: (bool value) {
+            onChanged: (bool value) async {
               setState(() {
                 _isDarkMode = value;
               });
-              _saveDarkMode(value);
+              await context.read<ThemeController>().setDarkMode(value);
             },
             contentPadding: EdgeInsets.zero,
           ),
