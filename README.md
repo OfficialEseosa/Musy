@@ -163,8 +163,4 @@ lib/
 - Animated transitions between quiz questions
 - Cloud sync for cross-device leaderboards
 
----
 
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.

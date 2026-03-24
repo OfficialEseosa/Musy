@@ -324,20 +324,20 @@ class DatabaseHelper {
       }
     }
 
-    // Check recent trend (last 3 vs previous 3 sessions)
-    if (sessions.length >= 6) {
-      final recent3 = sessions.sublist(0, 3);
-      final prev3 = sessions.sublist(3, 6);
-      final recentAvg = recent3.fold<int>(0, (sum, s) => sum + (s['score'] as int)) / 3;
-      final prevAvg = prev3.fold<int>(0, (sum, s) => sum + (s['score'] as int)) / 3;
+    // Check recent trend (last 2 vs previous 2 sessions)
+    if (sessions.length >= 4) {
+      final recent2 = sessions.sublist(0, 2);
+      final prev2 = sessions.sublist(2, 4);
+      final recentAvg = recent2.fold<int>(0, (sum, s) => sum + (s['score'] as int)) / 2;
+      final prevAvg = prev2.fold<int>(0, (sum, s) => sum + (s['score'] as int)) / 2;
 
-      if (recentAvg > prevAvg * 1.2) {
+      if (prevAvg > 0 && recentAvg > prevAvg * 1.15) {
         return {
           'icon': '📈',
           'title': 'You\'re improving!',
           'message': 'Your recent scores are ${((recentAvg / prevAvg - 1) * 100).round()}% higher than before. Keep it up!',
         };
-      } else if (recentAvg < prevAvg * 0.8) {
+      } else if (prevAvg > 0 && recentAvg < prevAvg * 0.85) {
         return {
           'icon': '💪',
           'title': 'Shake it off!',
@@ -346,8 +346,8 @@ class DatabaseHelper {
       }
     }
 
-    // Suggest weakest mode if accuracy is low
-    if (weakestMode != null && worstAccuracy < 0.5) {
+    // Suggest weakest mode if accuracy needs work
+    if (weakestMode != null && worstAccuracy < 0.6) {
       final pct = (worstAccuracy * 100).round();
       return {
         'icon': '🧠',
@@ -357,7 +357,7 @@ class DatabaseHelper {
     }
 
     // Celebrate strong performance
-    if (strongestMode != null && bestAccuracy > 0.8) {
+    if (strongestMode != null && bestAccuracy > 0.75) {
       final pct = (bestAccuracy * 100).round();
       return {
         'icon': '⭐',
@@ -366,12 +366,20 @@ class DatabaseHelper {
       };
     }
 
-    // Default: encourage more play
-    final totalGames = sessions.length;
+    // Show accuracy breakdown for the most-played mode
+    if (strongestMode != null) {
+      final pct = (bestAccuracy * 100).round();
+      return {
+        'icon': '🎵',
+        'title': '$strongestMode: $pct% accuracy',
+        'message': 'Keep playing to see how your performance trends over time!',
+      };
+    }
+
     return {
       'icon': '🎵',
       'title': 'Keep going!',
-      'message': 'You\'ve played $totalGames game${totalGames == 1 ? '' : 's'}. Play more to unlock detailed insights.',
+      'message': 'You\'ve played ${sessions.length} game${sessions.length == 1 ? '' : 's'} so far. Nice start!',
     };
   }
 
