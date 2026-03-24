@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/question.dart';
 import '../services/database_helper.dart';
 import '../services/settings_service.dart';
@@ -102,6 +103,13 @@ class _QuizScreenState extends State<QuizScreen> {
 
     final question = _questions[_currentIndex];
     final isCorrect = answer == question.correctAnswer;
+
+    // Haptic feedback for tactile response
+    if (isCorrect) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.heavyImpact();
+    }
 
     setState(() {
       _selectedAnswer = answer;

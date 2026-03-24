@@ -31,6 +31,12 @@ class MusyApp extends StatelessWidget {
                 centerTitle: true,
                 elevation: 0,
               ),
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                },
+              ),
             ),
             darkTheme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
@@ -41,6 +47,12 @@ class MusyApp extends StatelessWidget {
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
                 elevation: 0,
+              ),
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                },
               ),
             ),
             themeMode: themeController.themeMode,
@@ -77,7 +89,10 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _screens[_selectedIndex],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
